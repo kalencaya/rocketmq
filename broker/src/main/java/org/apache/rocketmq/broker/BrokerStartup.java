@@ -55,8 +55,12 @@ public class BrokerStartup {
     public static InternalLogger log;
 
     public static void main(String[] args) {
-        // Environment variables: ROCKETMQ_HOME=/Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution
-        // Program arguments: ‐n 127.0.0.1:9876 -c /Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution/conf/broker.conf
+        // 设置系统环境变量，linux和mac可以在.base_profile文件中设置，idea和eclipse设置 Environment variables
+        // ROCKETMQ_HOME=/Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution
+        // main方法执行参数，这俩参数最后是以args参数成对出现，在idea和eclipse可以通过 Program arguments 设置
+        // ‐n 127.0.0.1:9876 -c /Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution/conf/broker.conf
+        // 日志和配置默认存储位置都位于${user.home}目录下，这里进行更改
+        System.setProperty("user.home", "/Users/wangqi/Documents/工作目录/Git_repository/rocketmq/home");
         start(createBrokerController(args));
     }
 

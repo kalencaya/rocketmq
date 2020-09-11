@@ -16,23 +16,76 @@
  */
 package org.apache.rocketmq.remoting.netty;
 
+import io.netty.channel.DefaultChannelConfig;
+
 public class NettyServerConfig implements Cloneable {
+    /**
+     * NameServer 监听端口，默认初始化为9876. {@code nettyServerConfig.setListenPort(9876);}
+     * BrokerServer 监听端口，默认初始化为10911. {@code nettyServerConfig.setListenPort(10911);}
+     *
+     * @see org.apache.rocketmq.namesrv.NamesrvStartup#createNamesrvController(String[])
+     * @see BrokerStartup#createBrokerController(String[])
+     */
     private int listenPort = 8888;
+    /**
+     * worker 工作线程数量。
+     * 执行握手，编解码工作。
+     *
+     * @see NettyRemotingServer#start()
+     * @see
+     */
     private int serverWorkerThreads = 8;
+    /**
+     * public 业务线程池。 不同的业务处理逻辑会有自己的线程池，如果该任务类型（RequestCode）
+     * 未注册线程池则使用这个 public 线程池。参考dubbo的线程池任务执行策略all，message，direct等
+     * 执行真正业务的线程池。
+     *
+     * @see RequestCode
+     */
     private int serverCallbackExecutorThreads = 0;
+    /**
+     * EventLoopGroup中的worker线程池，处理io任务的，
+     * 如网络请求，解析请求包，转发到业务线程池执行具体
+     * 的逻辑。
+     *
+     * @see NettyRemotingServer#start()
+     */
     private int serverSelectorThreads = 3;
+    /**
+     * 发送 oneway 消息的并发度。
+     * broker端参数。
+     */
     private int serverOnewaySemaphoreValue = 256;
+    /**
+     * 发送 async 消息的并发度。
+     * broker端参数。
+     */
     private int serverAsyncSemaphoreValue = 64;
+    /**
+     * netty channel 的最大空闲时间（单位：秒），默认值是120s。
+     */
     private int serverChannelMaxIdleTimeSeconds = 120;
 
+    /**
+     * socket 的发送缓存区大小，默认64k
+     */
     private int serverSocketSndBufSize = NettySystemConfig.socketSndbufSize;
+    /**
+     * socket 的接收缓存区大小，默认64k
+     */
     private int serverSocketRcvBufSize = NettySystemConfig.socketRcvbufSize;
+    /**
+     * ByteBuf是否使用池化。
+     *
+     * @see DefaultChannelConfig#allocator netty 默认就是池化的。
+     * @see NettyRemotingServer#start()
+     */
     private boolean serverPooledByteBufAllocatorEnable = true;
 
     /**
      * make make install
-     *
-     *
+     * <p>
+     * <p>
      * ../glibc-2.10.1/configure \ --prefix=/usr \ --with-headers=/usr/include \
      * --host=x86_64-linux-gnu \ --build=x86_64-pc-linux-gnu \ --without-gd
      */

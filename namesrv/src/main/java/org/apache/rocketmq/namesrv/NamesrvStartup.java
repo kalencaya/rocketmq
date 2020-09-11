@@ -23,6 +23,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import org.apache.commons.cli.CommandLine;
@@ -48,8 +49,12 @@ public class NamesrvStartup {
     private static CommandLine commandLine = null;
 
     public static void main(String[] args) {
-        // Environment variables: ROCKETMQ_HOME=/Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution
-        // Program arguments: ‐n 127.0.0.1:9876
+        // 设置系统环境变量，linux和mac可以在.base_profile文件中设置，idea和eclipse设置 Environment variables
+        // ROCKETMQ_HOME=/Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution
+        // main方法执行参数，这俩参数最后是以args参数成对出现，在idea和eclipse可以通过 Program arguments 设置
+        // ‐n 127.0.0.1:9876
+        // 日志和配置默认存储位置都位于${user.home}目录下，这里进行更改
+        System.setProperty("user.home", "/Users/wangqi/Documents/工作目录/Git_repository/rocketmq/home");
         main0(args);
     }
 
@@ -81,6 +86,7 @@ public class NamesrvStartup {
             return null;
         }
 
+        // 属性值来源有2种，-c configFile配置文件，-- 属性名 属性值
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(9876);

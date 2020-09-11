@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.rocketmq.common.DataVersion;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.TopicConfig;
@@ -49,10 +50,15 @@ public class RouteInfoManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    // topic 消息队列路由信息，消息发送时根据路由表进行负载均衡发送到不同的queue
     private final HashMap<String/* topic */, List<QueueData>> topicQueueTable;
+    // broker 基础信息，包含brokername、所属集群名称、主备broker地址
     private final HashMap<String/* brokerName */, BrokerData> brokerAddrTable;
+    // broker集群信息，存储所有集群中的brokername
     private final HashMap<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
+    // broker状态信息，Namesrv收到心跳包时会替换该信息
     private final HashMap<String/* brokerAddr */, BrokerLiveInfo> brokerLiveTable;
+    // broker上的FilterServer列表，用于类模式消息过滤
     private final HashMap<String/* brokerAddr */, List<String>/* Filter Server */> filterServerTable;
 
     public RouteInfoManager() {
@@ -99,6 +105,18 @@ public class RouteInfoManager {
         return topicList.encode();
     }
 
+    /**
+     *
+     * @param clusterName
+     * @param brokerAddr
+     * @param brokerName
+     * @param brokerId
+     * @param haServerAddr
+     * @param topicConfigWrapper
+     * @param filterServerList
+     * @param channel
+     * @return
+     */
     public RegisterBrokerResult registerBroker(
         final String clusterName,
         final String brokerAddr,
@@ -122,13 +140,16 @@ public class RouteInfoManager {
 
                 boolean registerFirst = false;
 
+                // 同一个brokerName可以配置master/slave多台机器保证高可用
                 BrokerData brokerData = this.brokerAddrTable.get(brokerName);
                 if (null == brokerData) {
                     registerFirst = true;
                     brokerData = new BrokerData(clusterName, brokerName, new HashMap<Long, String>());
                     this.brokerAddrTable.put(brokerName, brokerData);
                 }
+                // brokerId -> brokerAddress。brokerId等于0为master，brokerId大于0为slave
                 Map<Long, String> brokerAddrsMap = brokerData.getBrokerAddrs();
+                // 切换master/slave，先移除后添加。
                 //Switch slave to master: first remove <1, IP:PORT> in namesrv, then add <0, IP:PORT>
                 //The same IP:PORT must only have one record in brokerAddrTable
                 Iterator<Entry<Long, String>> it = brokerAddrsMap.entrySet().iterator();
@@ -142,8 +163,8 @@ public class RouteInfoManager {
                 String oldAddr = brokerData.getBrokerAddrs().put(brokerId, brokerAddr);
                 registerFirst = registerFirst || (null == oldAddr);
 
-                if (null != topicConfigWrapper
-                    && MixAll.MASTER_ID == brokerId) {
+                //对于master节点，如果配置信息发生变化或首次注册，需要更新路由信息
+                if (null != topicConfigWrapper && MixAll.MASTER_ID == brokerId) {
                     if (this.isBrokerTopicConfigChanged(brokerAddr, topicConfigWrapper.getDataVersion())
                         || registerFirst) {
                         ConcurrentMap<String, TopicConfig> tcTable =
@@ -156,6 +177,7 @@ public class RouteInfoManager {
                     }
                 }
 
+                // 更新心跳信息
                 BrokerLiveInfo prevBrokerLiveInfo = this.brokerLiveTable.put(brokerAddr,
                     new BrokerLiveInfo(
                         System.currentTimeMillis(),
@@ -375,11 +397,11 @@ public class RouteInfoManager {
         TopicRouteData topicRouteData = new TopicRouteData();
         boolean foundQueueData = false;
         boolean foundBrokerData = false;
-        Set<String> brokerNameSet = new HashSet<String>();
-        List<BrokerData> brokerDataList = new LinkedList<BrokerData>();
+        Set<String> brokerNameSet = new HashSet<>();
+        List<BrokerData> brokerDataList = new LinkedList<>();
         topicRouteData.setBrokerDatas(brokerDataList);
 
-        HashMap<String, List<String>> filterServerMap = new HashMap<String, List<String>>();
+        HashMap<String, List<String>> filterServerMap = new HashMap<>();
         topicRouteData.setFilterServerTable(filterServerMap);
 
         try {
@@ -752,6 +774,9 @@ public class RouteInfoManager {
     }
 }
 
+/**
+ * @see org.apache.rocketmq.broker.BrokerController#start()
+ */
 class BrokerLiveInfo {
     private long lastUpdateTimestamp;
     private DataVersion dataVersion;
