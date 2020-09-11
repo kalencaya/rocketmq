@@ -55,6 +55,8 @@ public class BrokerStartup {
     public static InternalLogger log;
 
     public static void main(String[] args) {
+        // Environment variables: ROCKETMQ_HOME=/Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution
+        // Program arguments: ‐n 127.0.0.1:9876 -c /Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution/conf/broker.conf
         start(createBrokerController(args));
     }
 

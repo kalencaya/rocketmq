@@ -48,6 +48,8 @@ public class NamesrvStartup {
     private static CommandLine commandLine = null;
 
     public static void main(String[] args) {
+        // Environment variables: ROCKETMQ_HOME=/Users/wangqi/Documents/工作目录/Git_repository/rocketmq/distribution
+        // Program arguments: ‐n 127.0.0.1:9876
         main0(args);
     }
 
