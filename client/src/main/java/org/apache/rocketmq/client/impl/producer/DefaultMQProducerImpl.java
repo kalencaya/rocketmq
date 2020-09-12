@@ -98,6 +98,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     private final InternalLogger log = ClientLogger.getLog();
     private final Random random = new Random();
     private final DefaultMQProducer defaultMQProducer;
+    /**
+     * topic -> publish info
+     */
     private final ConcurrentMap<String/* topic */, TopicPublishInfo> topicPublishInfoTable =
         new ConcurrentHashMap<String, TopicPublishInfo>();
     private final ArrayList<SendMessageHook> sendMessageHookList = new ArrayList<SendMessageHook>();
@@ -179,9 +182,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         switch (this.serviceState) {
             case CREATE_JUST:
                 this.serviceState = ServiceState.START_FAILED;
-
+                //主要是检查producer group是否符合条件
                 this.checkConfig();
-
+                // 更改instance name为pid
                 if (!this.defaultMQProducer.getProducerGroup().equals(MixAll.CLIENT_INNER_PRODUCER_GROUP)) {
                     this.defaultMQProducer.changeInstanceNameToPID();
                 }
@@ -233,7 +236,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
     private void checkConfig() throws MQClientException {
         Validators.checkGroup(this.defaultMQProducer.getProducerGroup());
-
+        //如果produce group 为null，在上一步#checkGroup(String)中就会抛出异常
         if (null == this.defaultMQProducer.getProducerGroup()) {
             throw new MQClientException("producerGroup is null", null);
         }

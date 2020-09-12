@@ -84,6 +84,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
     /**
      * Timeout for sending messages.
+     * unit: millsecond
      */
     private int sendMsgTimeout = 3000;
 
@@ -96,6 +97,9 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * Maximum number of retry to perform internally before claiming sending failure in synchronous mode. </p>
      *
      * This may potentially cause message duplication which is up to application developers to resolve.
+     *
+     * 同步发送模式：1 normal + 2 retries = 3 total
+     * 异步发送模式下发送次数为1，不会重试
      */
     private int retryTimesWhenSendFailed = 2;
 
@@ -268,6 +272,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      */
     @Override
     public void start() throws MQClientException {
+        // withNamespace 添加retry 和dlq前缀
         this.setProducerGroup(withNamespace(this.producerGroup));
         this.defaultMQProducerImpl.start();
         if (null != traceDispatcher) {
@@ -743,7 +748,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     /**
      * This method will be removed in a certain version after April 5, 2020, so please do not use this method.
      *
-     * @param key accesskey
+     * @param key accesskey 没啥用
      * @param newTopic topic name
      * @param queueNum topic's queue number
      * @throws MQClientException if there is any client error.
@@ -758,10 +763,10 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * Create a topic on broker. This method will be removed in a certain version after April 5, 2020, so please do not
      * use this method.
      *
-     * @param key accesskey
+     * @param key accesskey 没啥用
      * @param newTopic topic name
      * @param queueNum topic's queue number
-     * @param topicSysFlag topic system flag
+     * @param topicSysFlag topic system flag 默认为0
      * @throws MQClientException if there is any client error.
      */
     @Deprecated
@@ -855,8 +860,8 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * @param topic message topic
      * @param key message key index word
      * @param maxNum max message number
-     * @param begin from when
-     * @param end to when
+     * @param begin from when timestamp
+     * @param end to when timestamp
      * @return QueryResult instance contains matched messages.
      * @throws MQClientException if there is any client error.
      * @throws InterruptedException if the thread is interrupted.
